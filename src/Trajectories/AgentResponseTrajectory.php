@@ -116,16 +116,19 @@ final class AgentResponseTrajectory
 
     private static function finishReason(TextResponse $response): ?string
     {
-        $last = $response->steps->last();
-
-        if ($last instanceof Step) {
-            return $last->finishReason->value;
+        // Checked BEFORE the recorded steps, not after. An agent that reaches an
+        // approval-gated tool produces both: steps whose last finish reason is
+        // `tool_calls` (or `stop`), and a pending approval. Reading the step
+        // reason first would report such a run as finished — which is exactly
+        // the case this branch exists to catch, and the one where text saying
+        // "I have submitted that refund" is untrue.
+        if ($response->pendingApprovals->isNotEmpty()) {
+            return 'pending_approval';
         }
 
-        // A response that stopped on an approval did not finish, and saying
-        // "stop" here would let a run that is waiting for a human read as a
-        // completed one.
-        return $response->pendingApprovals->isNotEmpty() ? 'pending_approval' : null;
+        $last = $response->steps->last();
+
+        return $last instanceof Step ? $last->finishReason->value : null;
     }
 
     /**

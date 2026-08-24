@@ -48,3 +48,15 @@ Decisions worth remembering, and the reasoning that produced them.
   reason written down.** Pest binds `$this` inside `extend()` closures at
   runtime; typing it would mean depending on Pest, which this package
   deliberately does not.
+- **Check the pending approval before the recorded finish reason.** The shape an
+  agent actually produces at an approval gate is *both*: steps whose last reason
+  is `tool_calls`, and a pending approval. Reading the step reason first reported
+  such a run as finished — defeating the exact case the branch was written for.
+  The original test only covered the no-steps path, which is why it passed.
+- **"Registered automatically" was a claim, not a fact.** Composer's `files`
+  order across sibling packages is unspecified, and a `suggest` creates no
+  dependency edge to order by, so the Pest expectation can lose the race and
+  never register — with no second chance, since Composer will not re-run the
+  file. Making the registration a named idempotent function costs nothing and
+  gives the host a one-line fix; claiming automation that the loader does not
+  guarantee costs somebody an afternoon.

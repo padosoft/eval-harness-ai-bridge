@@ -154,6 +154,16 @@ it('holds its ground on support questions', function () {
 });
 ```
 
+The expectation registers itself when Pest is installed. If it ever comes back as
+an unknown expectation, Composer loaded this package's `files` entry before
+Pest's own — an order that is not specified between sibling packages, and this
+one only *suggests* Pest so there is no dependency edge to order them by. One
+line in `tests/Pest.php` settles it:
+
+```php
+\Padosoft\EvalHarnessAiBridge\Testing\registerPestExpectations();
+```
+
 **PHPUnit**
 
 ```php
@@ -203,7 +213,7 @@ composer require --dev padosoft/eval-harness-ai-bridge
 
 Requires PHP 8.3+, Laravel 12 or 13, `padosoft/eval-harness` ^1.6, and `laravel/ai`.
 
-There is **no service provider and nothing to configure**. A package whose job is to connect two other packages should not become a third thing to configure: everything here is a class you construct where you use it.
+There is **no service provider and nothing to configure**. A package whose job is to connect two other packages should not become a third thing to configure: everything here is a class you construct where you use it. (The one caveat is the Pest expectation's autoload order, above.)
 
 ---
 
@@ -216,7 +226,8 @@ There is **no service provider and nothing to configure**. A package whose job i
 | `Datasets\ConversationDataset::fromFile()` | multi-turn conversations as dataset rows |
 | `Testing\AssertsEvals` | `assertPassesEval()` / `assertEvalReportPasses()` for PHPUnit |
 | `Testing\EvalAssertion` | the run-and-judge primitive both surfaces sit on |
-| `expect(...)->toPassEval()` | the Pest expectation, auto-registered when Pest is present |
+| `expect(...)->toPassEval()` | the Pest expectation |
+| `Testing\registerPestExpectations()` | registers it; idempotent, and a no-op without Pest |
 
 Already recording trajectories yourself? Use the adapter alone:
 

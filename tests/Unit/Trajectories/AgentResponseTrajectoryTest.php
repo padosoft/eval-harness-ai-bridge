@@ -119,6 +119,25 @@ final class AgentResponseTrajectoryTest extends TestCase
         $this->assertSame('pending_approval', $trajectory->finishReason);
     }
 
+    /**
+     * The shape an agent actually produces when it reaches an approval-gated
+     * tool: recorded steps AND a pending approval. Reading the step's finish
+     * reason first reports the run as finished, which is the precise failure
+     * `no-pending-approvals` exists to catch.
+     */
+    public function test_a_pending_approval_beats_the_recorded_step_reason(): void
+    {
+        $trajectory = AgentResponseTrajectory::fromResponse($this->response(
+            toolCalls: [new ToolCall('call-1', 'refund_order', ['id' => 1])],
+            steps: [$this->step(FinishReason::ToolCalls), $this->step(FinishReason::Stop)],
+            pendingApprovals: [new PendingApproval('ap-1', 'refund_order', ['id' => 1], 'over threshold')],
+        ));
+
+        $this->assertSame('pending_approval', $trajectory->finishReason);
+        $this->assertSame(1, $trajectory->pendingApprovals);
+        $this->assertSame(2, $trajectory->steps, 'the steps themselves are still reported');
+    }
+
     public function test_completed_tool_results_count_as_approvals(): void
     {
         $trajectory = AgentResponseTrajectory::fromResponse($this->response(

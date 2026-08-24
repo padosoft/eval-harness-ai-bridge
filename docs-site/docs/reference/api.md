@@ -90,4 +90,13 @@ expect($agent)->toPassEval(
 );
 ```
 
-Registered automatically when Pest is installed, via a Composer `files` autoload entry. The subject must be a callable or a `SampleRunner`.
+Registered via a Composer `files` autoload entry when Pest is installed. The
+subject must be a callable or a `SampleRunner`.
+
+```php
+\Padosoft\EvalHarnessAiBridge\Testing\registerPestExpectations(): bool
+```
+
+Idempotent, and a no-op returning `false` when Pest is absent or has not booted.
+Call it from `tests/Pest.php` if the autoload order put this package ahead of
+Pest's own function file — see [Installation](/installation).

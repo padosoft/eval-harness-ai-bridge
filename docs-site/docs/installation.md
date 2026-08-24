@@ -25,7 +25,26 @@ use Padosoft\EvalHarnessAiBridge\Runners\AgentSampleRunner;
 use Padosoft\EvalHarnessAiBridge\Trajectories\AgentResponseTrajectory;
 ```
 
-The one exception is the Pest expectation, which is auto-registered through a Composer `files` autoload entry — Pest has no service provider to hook, and asking every host to remember a registration line in `Pest.php` is how a nice API becomes an unused one. Without Pest installed, that file defines a function that never runs.
+The one exception is the Pest expectation, registered through a Composer `files`
+autoload entry — Pest has no service provider to hook.
+
+That is best-effort rather than a guarantee, and it is worth being precise about
+why: the order of `files` entries **across sibling packages is not specified**,
+and this package only *suggests* Pest, so there is no dependency edge to order
+them by. In the load order where this file runs before Pest's own function file,
+`expect()` does not exist yet, and Composer will not re-run the file.
+
+So the registration is a named, idempotent function you can call yourself. If
+`toPassEval` ever comes back as an unknown expectation, one line in
+`tests/Pest.php` settles it:
+
+```php
+\Padosoft\EvalHarnessAiBridge\Testing\registerPestExpectations();
+```
+
+Calling it twice is safe; calling it without Pest is a no-op returning `false`.
+Without Pest installed nothing runs at all, and the `AssertsEvals` trait is the
+surface that works everywhere.
 
 ## Configuration lives in eval-harness
 
