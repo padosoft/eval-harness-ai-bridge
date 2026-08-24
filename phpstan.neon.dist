@@ -1,0 +1,12 @@
+parameters:
+    level: 6
+    paths:
+        - src
+        - tests
+    excludePaths:
+        # Pest binds $this to its Expectation object inside extend() closures at
+        # runtime. Typing that would mean depending on Pest, which this package
+        # deliberately does not: the PHPUnit trait is the surface that works
+        # everywhere, and this file is a no-op without Pest installed.
+        - src/Testing/pest.php
+    treatPhpDocTypesAsCertain: false
