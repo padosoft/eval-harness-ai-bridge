@@ -1,0 +1,128 @@
+{
+  "title": "eval-harness-ai-bridge",
+  "description": "Evaluate a laravel/ai agent on what it did, not just what it said. Trajectory translation, multi-turn conversation datasets, and Pest / PHPUnit assertions for padosoft/eval-harness. Apache-2.0.",
+  "url": "https://doc.eval-harness-ai-bridge.padosoft.com",
+  "src": "docs",
+  "out": "_site",
+  "base": "/",
+  "favicon": "assets/favicon.svg",
+  "theme": {
+    "name": "default",
+    "defaultMode": "dark",
+    "customCss": [
+      "assets/custom.css"
+    ]
+  },
+  "autoTitleFromH1": true,
+  "copyCode": true,
+  "pageNavigation": true,
+  "minify": true,
+  "markdown": {
+    "breaks": true
+  },
+  "layout": {
+    "spa": true,
+    "header": {
+      "enabled": true
+    },
+    "sidebar": {
+      "collapsible": true,
+      "defaultCollapsed": false
+    },
+    "optionsMenu": {
+      "position": "header",
+      "components": {
+        "search": true,
+        "themeSwitch": true
+      }
+    }
+  },
+  "navigation": [
+    {
+      "title": "Get Started",
+      "icon": "rocket",
+      "children": [
+        {
+          "title": "Introduction",
+          "path": "/"
+        },
+        {
+          "title": "Quickstart",
+          "path": "/quickstart"
+        },
+        {
+          "title": "Installation",
+          "path": "/installation"
+        }
+      ]
+    },
+    {
+      "title": "Guides",
+      "icon": "book-open",
+      "children": [
+        {
+          "title": "Trajectories",
+          "path": "/guides/trajectories"
+        },
+        {
+          "title": "Multi-turn conversations",
+          "path": "/guides/conversations"
+        },
+        {
+          "title": "Evals in your test suite",
+          "path": "/guides/testing"
+        }
+      ]
+    },
+    {
+      "title": "Concepts",
+      "icon": "graduation-cap",
+      "children": [
+        {
+          "title": "Why the DTO is not the SDK",
+          "path": "/concepts/sdk-boundary"
+        },
+        {
+          "title": "What a text metric cannot see",
+          "path": "/concepts/unearned-answers"
+        }
+      ]
+    },
+    {
+      "title": "Reference",
+      "icon": "list",
+      "children": [
+        {
+          "title": "API",
+          "path": "/reference/api"
+        }
+      ]
+    }
+  ],
+  "git": {
+    "repo": "https://github.com/padosoft/eval-harness-ai-bridge",
+    "branch": "main",
+    "editLink": true,
+    "lastUpdated": true,
+    "dateFormat": "relative"
+  },
+  "seo": {
+    "defaultDescription": "Evaluate a laravel/ai agent on what it did, not just what it said.",
+    "aiBots": true,
+    "openGraph": {},
+    "twitter": {
+      "cardType": "summary_large_image"
+    }
+  },
+  "sitemap": {
+    "defaultChangefreq": "weekly",
+    "defaultPriority": 0.8
+  },
+  "mermaid": {},
+  "llms": {
+    "fullContext": true
+  },
+  "analytics": {
+    "enabled": false
+  }
+}
