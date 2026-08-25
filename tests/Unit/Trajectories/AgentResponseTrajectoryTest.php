@@ -12,6 +12,7 @@ use Laravel\Ai\Responses\Data\Meta;
 use Laravel\Ai\Responses\Data\Step;
 use Laravel\Ai\Responses\Data\ToolCall;
 use Laravel\Ai\Responses\Data\ToolResult;
+use Laravel\Ai\Responses\Data\UrlCitation;
 use Laravel\Ai\Responses\Data\Usage;
 use Padosoft\EvalHarnessAiBridge\Trajectories\AgentResponseTrajectory;
 use PHPUnit\Framework\TestCase;
@@ -224,5 +225,32 @@ final class AgentResponseTrajectoryTest extends TestCase
     private function step(FinishReason $reason): Step
     {
         return new Step('', [], [], $reason, new Usage, new Meta);
+    }
+
+    public function test_it_carries_provider_side_citations_so_grounding_can_be_scored(): void
+    {
+        $response = new AgentResponse(
+            'inv_1',
+            'The refund window is 30 days.',
+            new Usage(promptTokens: 10, completionTokens: 5),
+            new Meta('anthropic', 'claude-sonnet-4', new Collection([
+                new UrlCitation('https://example.test/returns', 'Returns policy'),
+            ])),
+        );
+
+        $trajectory = AgentResponseTrajectory::fromResponse($response);
+
+        // A model that answered from a provider-side web fetch used to look
+        // exactly like one that made the answer up: the only sources a
+        // trajectory carried were the ones a *tool* returned.
+        $this->assertSame('https://example.test/returns', $trajectory->metadata['citations'][0]['url']);
+        $this->assertSame('Returns policy', $trajectory->metadata['citations'][0]['title']);
+    }
+
+    public function test_a_response_with_no_citations_does_not_carry_an_empty_key(): void
+    {
+        $trajectory = AgentResponseTrajectory::fromResponse($this->response());
+
+        $this->assertArrayNotHasKey('citations', $trajectory->metadata);
     }
 }

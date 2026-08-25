@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Padosoft\EvalHarnessAiBridge\Trajectories;
 
+use Illuminate\Contracts\Support\Arrayable;
 use Laravel\Ai\Approvals\PendingApproval;
+use Laravel\Ai\Responses\Data\Citation;
 use Laravel\Ai\Responses\Data\Step;
 use Laravel\Ai\Responses\Data\ToolCall as AiToolCall;
 use Laravel\Ai\Responses\Data\ToolResult;
@@ -185,6 +187,18 @@ final class AgentResponseTrajectory
                 'model' => $response->meta->model,
             ], static fn (mixed $value): bool => $value !== null && $value !== 0),
             'pending_approvals' => $pending,
+            // Web-fetch and web-search citations, when the provider reported any
+            // (laravel/ai surfaces them on Meta since 0.11, and on the streaming
+            // path too). A grounding metric can only score sources it can see,
+            // and until now the only sources a trajectory carried were the ones a
+            // *tool* returned — a model that answered from a provider-side web
+            // fetch looked, to citation-groundedness, exactly like a model that
+            // made the answer up.
+            'citations' => $response->meta->citations
+                ->map(static fn (Citation $citation): array => $citation instanceof Arrayable
+                    ? $citation->toArray()
+                    : ['title' => $citation->title])
+                ->all(),
         ], static fn (mixed $value): bool => $value !== null && $value !== []);
     }
 

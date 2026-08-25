@@ -93,12 +93,14 @@ A boundary that is only described in a README erodes. These fail when it does.
 | `$response->pendingApprovals` | `pendingApprovals` |
 | approved tool results | `approvals[]` |
 | usage, provider, model | `metadata` |
+| `$response->meta->citations` | `metadata.citations` — provider-side web fetch / web search sources |
 
-Four details that are not obvious, and each has a test:
+Five details that are not obvious, and each has a test:
 
 - **Results join calls by id, never by position.** Parallel tools return out of order, and a pending call has no result at all. Matching by index silently attaches one call's outcome to another's.
 - **A denied call is recorded as failed, with no result.** The tool never ran. *"Did it look the order up?"* must not be satisfied by a rejection.
 - **A run stopped on an approval reports `pending_approval`, not `stop`.** Text that says *"I have submitted that"* while an approval is pending reads as success and is not.
+- **Provider-side citations are sources too.** Until `laravel/ai` 0.11 surfaced web-fetch citations on the response, the only sources a trajectory carried were the ones a *tool* returned — so a model that answered from a provider-side web fetch looked, to `citation-groundedness`, exactly like a model that made the answer up.
 - **Usage travels in the metadata, in the shape eval-harness's cost ledger reads** — so agent spend appears next to judge spend instead of being quietly treated as free.
 
 ### What the response cannot tell you
