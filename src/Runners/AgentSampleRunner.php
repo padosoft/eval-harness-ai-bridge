@@ -11,6 +11,7 @@ use Padosoft\EvalHarness\Contracts\SampleRunner;
 use Padosoft\EvalHarness\Exceptions\EvalRunException;
 use Padosoft\EvalHarness\Trajectory\TrajectoryRecorder;
 use Padosoft\EvalHarnessAiBridge\Trajectories\AgentResponseTrajectory;
+use Padosoft\EvalHarnessAiBridge\Trajectories\RunTrajectoryRecorder;
 
 /**
  * Runs a `laravel/ai` agent as an eval system-under-test, and records how it got
@@ -48,13 +49,23 @@ final class AgentSampleRunner implements SampleRunner
     public function __construct(
         callable $agent,
         private readonly ?TrajectoryRecorder $trajectories = null,
+        private readonly ?RunTrajectoryRecorder $runs = null,
     ) {
         $this->agent = Closure::fromCallable($agent);
     }
 
     public function run(SampleInvocation $sample): string
     {
-        $response = ($this->agent)($sample->input, $sample);
+        $runs = $this->runRecorder();
+
+        // Scoped so the run events can be attributed to this sample — including
+        // the events of a run that throws, which is the case the response mapper
+        // below never gets to see. The exception is deliberately not caught: a
+        // failed run must still fail the eval, and by the time it propagates the
+        // trajectory has already been recorded.
+        $response = $runs === null
+            ? ($this->agent)($sample->input, $sample)
+            : $runs->during($sample->id, fn () => ($this->agent)($sample->input, $sample));
 
         if (! $response instanceof TextResponse) {
             throw new EvalRunException(sprintf(
@@ -65,9 +76,34 @@ final class AgentSampleRunner implements SampleRunner
             ));
         }
 
-        $this->recorder()?->record($sample->id, AgentResponseTrajectory::fromResponse($response));
+        // The event recorder has already filed its trajectory when it saw the run
+        // finish. Falling back to the response keeps the runner working on an SDK
+        // older than 0.11, and in a plain unit test with no container at all.
+        if ($runs === null || $runs->trajectoryFor($sample->id) === null) {
+            $this->recorder()?->record($sample->id, AgentResponseTrajectory::fromResponse($response));
+        }
 
         return $response->text;
+    }
+
+    /**
+     * The event-based recorder, when the application has one bound. Optional for
+     * the same reason the trajectory recorder is: its absence costs timing and
+     * failed-run trajectories, not the run.
+     */
+    private function runRecorder(): ?RunTrajectoryRecorder
+    {
+        if ($this->runs !== null) {
+            return $this->runs;
+        }
+
+        if (! function_exists('app')) {
+            return null;
+        }
+
+        $recorder = app(RunTrajectoryRecorder::class);
+
+        return $recorder instanceof RunTrajectoryRecorder ? $recorder : null;
     }
 
     /**

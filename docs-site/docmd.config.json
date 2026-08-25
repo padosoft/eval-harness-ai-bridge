@@ -65,6 +65,11 @@
           "path": "/guides/trajectories"
         },
         {
+          "title": "Failed Runs & Timing",
+          "path": "/guides/failed-runs-and-timing",
+          "icon": "clock"
+        },
+        {
           "title": "Multi-turn conversations",
           "path": "/guides/conversations"
         },

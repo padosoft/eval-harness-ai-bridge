@@ -60,3 +60,20 @@ Decisions worth remembering, and the reasoning that produced them.
   file. Making the registration a named idempotent function costs nothing and
   gives the host a one-line fix; claiming automation that the loader does not
   guarantee costs somebody an afternoon.
+- **The response is the wrong source for the runs worth evaluating.** A trajectory
+  built from `AgentResponse` can only describe a run that returned one, so the
+  agent that threw on its third step — the row you most want in the dataset — was
+  the one the mapper never saw. `Laravel\Ai\Responses\Data\Step` also carries no
+  duration, which is why `ToolCall::$durationMs` sat unpopulated since it was
+  added: not an oversight, a source that does not have the number. Both are on
+  the 0.11 run events instead.
+- **Correlate by scope, not by id, when the failure path has no id to give you.**
+  Tying a run to its sample through the response's `invocationId` works right up
+  until the run throws, which is exactly the case being added. Wrapping the call
+  in a scope (`during($sampleId, ...)`) attributes the events that already fired,
+  and the exception still propagates and still fails the eval.
+- **A textual architecture guard is a budget, and widening it is a decision.**
+  `BoundaryTest` allows the SDK to be named in a fixed list of files; the two new
+  adapters legitimately belong there, so the list and the docblock that says how
+  many files it holds were both updated. Adding a file quietly, or loosening the
+  test to a pattern, would have spent the invariant instead of extending it.
