@@ -93,13 +93,38 @@ A boundary that is only described in a README erodes. These fail when it does.
 | `$response->pendingApprovals` | `pendingApprovals` |
 | approved tool results | `approvals[]` |
 | usage, provider, model | `metadata` |
+| `$response->meta->citations` | `metadata.citations` — provider-side web fetch / web search sources |
 
-Four details that are not obvious, and each has a test:
+Five details that are not obvious, and each has a test:
 
 - **Results join calls by id, never by position.** Parallel tools return out of order, and a pending call has no result at all. Matching by index silently attaches one call's outcome to another's.
 - **A denied call is recorded as failed, with no result.** The tool never ran. *"Did it look the order up?"* must not be satisfied by a rejection.
 - **A run stopped on an approval reports `pending_approval`, not `stop`.** Text that says *"I have submitted that"* while an approval is pending reads as success and is not.
+- **Provider-side citations are sources too.** Until `laravel/ai` 0.11 surfaced web-fetch citations on the response, the only sources a trajectory carried were the ones a *tool* returned — so a model that answered from a provider-side web fetch looked, to `citation-groundedness`, exactly like a model that made the answer up.
 - **Usage travels in the metadata, in the shape eval-harness's cost ledger reads** — so agent spend appears next to judge spend instead of being quietly treated as free.
+
+### What the response cannot tell you
+
+The table above reads a **finished response**, which is the right source for a
+run that finished. It has two blind spots, and both are where the interesting
+evals live. On `laravel/ai` **^0.11** the bridge closes them by listening to the
+run events instead:
+
+| Blind spot | Why the response cannot fix it | What the events give you |
+|---|---|---|
+| **A run that failed** | There is no response object at all | A full trajectory with `finishReason: 'error'`, the steps it did take, the tools it did call, and the exception class in `metadata` |
+| **Timing** | `Laravel\Ai\Responses\Data\Step` carries text, tool calls, tool results, finish reason, usage and meta — **no duration** | `ToolCall::$durationMs` on every call, including the ones that threw |
+| **A tool that threw** | A failed tool and a tool that returned nothing look identical | `ToolCall::$error` with the message, next to the time it burned first |
+
+The agent that threw on its third step is the one you most want in the dataset,
+and it was exactly the one the response mapper never saw.
+
+This is automatic: the service provider is auto-discovered, `AgentSampleRunner`
+scopes each sample, and the events are attributed to it — including the events of
+a run that then throws. An agent used **as a tool** starts its own invocation,
+which is counted in `metadata.delegated_runs` rather than mistaken for the run
+under test. On an SDK older than 0.11 nothing registers and the response mapper
+behaves exactly as before.
 
 ---
 
@@ -223,6 +248,7 @@ There is **no service provider and nothing to configure**. A package whose job i
 |---|---|
 | `Trajectories\AgentResponseTrajectory::fromResponse()` | translate any `laravel/ai` response into a `Trajectory` |
 | `Runners\AgentSampleRunner` | run an agent as the system-under-test and record its trajectory |
+| `Trajectories\RunTrajectoryRecorder` | build a `Trajectory` from the 0.11 run events — the only way to get timing, tool failures, and a trajectory for a run that never returned |
 | `Datasets\ConversationDataset::fromFile()` | multi-turn conversations as dataset rows |
 | `Testing\AssertsEvals` | `assertPassesEval()` / `assertEvalReportPasses()` for PHPUnit |
 | `Testing\EvalAssertion` | the run-and-judge primitive both surfaces sit on |

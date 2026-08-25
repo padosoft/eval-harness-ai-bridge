@@ -21,9 +21,18 @@ use PHPUnit\Framework\TestCase;
 final class BoundaryTest extends TestCase
 {
     /** Files allowed to know the SDK exists. */
+    /**
+     * The files allowed to name the SDK. Every one of them is an adapter by
+     * definition — a mapper for that SDK's response, a runner that calls it, a
+     * listener for its events, and the provider that registers that listener.
+     * Anything else naming `Laravel\Ai\` has leaked the SDK into logic that
+     * should have outlived it.
+     */
     private const SDK_AWARE = [
         'src/Trajectories/AgentResponseTrajectory.php',
+        'src/Trajectories/RunTrajectoryRecorder.php',
         'src/Runners/AgentSampleRunner.php',
+        'src/EvalHarnessAiBridgeServiceProvider.php',
     ];
 
     /**
@@ -44,7 +53,8 @@ final class BoundaryTest extends TestCase
     }
 
     /**
-     * A future SDK swap should have a known blast radius: two files.
+     * A future SDK swap should have a known blast radius: the four files listed
+     * in SDK_AWARE, and nothing else.
      */
     public function test_only_the_adapter_and_the_runner_know_about_laravel_ai(): void
     {

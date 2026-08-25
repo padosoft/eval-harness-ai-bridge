@@ -99,3 +99,11 @@ app(TrajectoryRecorder::class)->record(
 `AgentSampleRunner` resolves the recorder from the container and degrades quietly if there is none — a missing recorder costs you the trajectory metrics, not the run. That keeps the runner usable in a plain unit test with no application booted.
 
 A missing *trajectory* is different: eval-harness raises a `MetricException` on a trajectory metric with nothing to score, captured as a failure. Scoring 0 would blame the agent for the harness's wiring; scoring 1 would let a dataset go green because nobody plugged the recorder in.
+
+## What a response cannot carry
+
+Everything above is read from the response the agent returned. A run that
+**failed** has none, and no response object carries **timing** — so tool
+durations and tool exceptions come from somewhere else. See
+[Failed Runs & Timing](/guides/failed-runs-and-timing), which needs
+`laravel/ai` ^0.11.
