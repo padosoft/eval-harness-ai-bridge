@@ -11,7 +11,16 @@ it('holds its ground on support questions', function () {
 });
 ```
 
-The expectation is registered automatically when Pest is installed — there is nothing to add to `Pest.php`.
+The expectation registers itself when Pest is installed.
+
+If it comes back as an unknown expectation, Composer loaded this package's
+`files` entry before Pest's own — an order that is not specified between sibling
+packages, and this one only *suggests* Pest so there is no dependency edge to
+order them by. One line in `tests/Pest.php` settles it permanently:
+
+```php
+\Padosoft\EvalHarnessAiBridge\Testing\registerPestExpectations();
+```
 
 ## PHPUnit
 

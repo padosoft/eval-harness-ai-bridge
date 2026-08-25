@@ -2,40 +2,62 @@
 
 declare(strict_types=1);
 
+namespace Padosoft\EvalHarnessAiBridge\Testing;
+
+use InvalidArgumentException;
 use Padosoft\EvalHarness\Contracts\SampleRunner;
 use Padosoft\EvalHarness\EvalEngine;
-use Padosoft\EvalHarnessAiBridge\Testing\AssertsEvals;
-use Padosoft\EvalHarnessAiBridge\Testing\EvalAssertion;
 use PHPUnit\Framework\Assert;
 
 /**
  * Pest surface: `expect($agent)->toPassEval('support.agent')`.
  *
- * Autoloaded as a `files` entry so the expectation exists the moment the
- * package is installed — Pest has no service provider to hook, and asking every
- * host to remember a registration line in Pest.php is how a nice API becomes an
- * unused one.
+ * ## Why this is a function you can call, not only an autoload side effect
  *
- * The whole file is a no-op without Pest: `expect()` is Pest's, and the
- * `extend` API only exists there. So installing this package in a PHPUnit-only
- * project adds a function definition that never runs, and the
- * {@see AssertsEvals} trait is the
- * surface that works everywhere.
+ * Composer runs this file as a `files` autoload entry, and the common case is
+ * that Pest's own function file has already run by then — so the call at the
+ * bottom registers the expectation and a host does nothing.
+ *
+ * But the order of `files` entries across sibling packages is **not
+ * guaranteed**, and this package only *suggests* Pest rather than depending on
+ * it, so there is no dependency edge to order them by. In the load order where
+ * this file runs first, `expect()` does not exist yet and there is no second
+ * chance: Composer will not re-run the file.
+ *
+ * Rather than pretend that cannot happen, the registration is a named,
+ * idempotent function. If `expect(...)->toPassEval()` ever comes back as an
+ * unknown expectation, one line in `tests/Pest.php` fixes it for good:
+ *
+ * ```php
+ * \Padosoft\EvalHarnessAiBridge\Testing\registerPestExpectations();
+ * ```
+ *
+ * Calling it twice is safe, and calling it without Pest installed is a no-op —
+ * the {@see AssertsEvals} trait is the surface that works everywhere.
  */
-if (! function_exists('Padosoft\EvalHarnessAiBridge\Testing\registerPestExpectations')) {
+if (! function_exists(__NAMESPACE__.'\registerPestExpectations')) {
     /**
-     * @internal
+     * Register the `toPassEval` expectation with Pest.
+     *
+     * @return bool whether the expectation is registered — false when Pest is
+     *              absent or has not booted yet, which is not an error
      */
-    function padosoft_eval_harness_ai_bridge_register_pest_expectations(): void
+    function registerPestExpectations(): bool
     {
+        static $registered = false;
+
+        if ($registered) {
+            return true;
+        }
+
         if (! function_exists('expect')) {
-            return;
+            return false;
         }
 
         $expectation = expect();
 
         if (! method_exists($expectation, 'extend')) {
-            return;
+            return false;
         }
 
         $expectation::extend('toPassEval', function (
@@ -71,7 +93,13 @@ if (! function_exists('Padosoft\EvalHarnessAiBridge\Testing\registerPestExpectat
 
             return $this;
         });
+
+        $registered = true;
+
+        return true;
     }
 
-    padosoft_eval_harness_ai_bridge_register_pest_expectations();
+    // Best effort at autoload time; the documented one-liner covers the load
+    // order where Pest has not defined expect() yet.
+    registerPestExpectations();
 }
